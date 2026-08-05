@@ -1,0 +1,64 @@
+{
+  "profile_id": "software_engineer_java",
+  "target_role_category": "Back-End Software Engineering (Java / Spring)",
+  "full_name": "Software Engineering Candidate",
+  "email": "candidate@example.com",
+  "phone": null,
+  "linkedin_url": "https://github.com/Dmuniiz",
+  "summary": "Estudante de Engenharia de Software com foco em desenvolvimento back-end Java e ecossistema Spring. Experiência na construção de APIs REST seguras e escaláveis utilizando Spring Boot, Spring Security, JPA/Hibernate e PostgreSQL, aplicando boas práticas de arquitetura (SOLID, Design Patterns, testes automatizados). Possui forte capacidade analítica oriunda de suporte de alta complexidade em incidentes críticos.",
+  "core_skills": [
+    "Java",
+    "Spring Boot",
+    "Spring MVC",
+    "Spring Data JPA",
+    "Spring Security",
+    "APIs REST",
+    "JWT",
+    "OAuth2",
+    "PostgreSQL",
+    "SQL",
+    "Flyway",
+    "Docker",
+    "Docker Compose",
+    "JUnit",
+    "Mockito",
+    "SOLID",
+    "Design Patterns",
+    "Git/GitHub",
+    "Linux",
+    "AWS"
+  ],
+  "experiences": [
+    {
+      "company": "Concentrix",
+      "role_title": "Support Advisor – L4",
+      "dates": "12/2024 – Present",
+      "location": "São Paulo, Brasil",
+      "highlights": [
+        "Garantia de 3 promoções em 18 meses até a posição máxima L4.",
+        "Ponto focal definitivo de escalonamento (L4), diagnosticando e resolvendo problemas complexos em sistemas operacionais e aplicações.",
+        "Análise de Causa Raiz (RCA) e implementação de soluções de contorno para redução do MTTR.",
+        "Mentoria técnica para analistas N1, N2 e N3 compartilhando metodologias de diagnóstico.",
+        "Comunicação cross-functional traduzindo problemas técnicos para times de engenharia e stakeholders."
+      ]
+    }
+  ],
+  "education": [
+    {
+      "institution": "USJT",
+      "degree": "Bacharelado em Engenharia de Software",
+      "field_of_study": "Engenharia de Software",
+      "graduation_year": "2027"
+    },
+    {
+      "institution": "ETEC Vila Formosa",
+      "degree": "Técnico em Desenvolvimento de Sistemas",
+      "field_of_study": "Desenvolvimento de Sistemas",
+      "graduation_year": "2023"
+    }
+  ],
+  "certifications": [
+    "AWS Cloud Practitioner (Em andamento)",
+    "ITIL 4 Foundation (Planejado)"
+  ]
+}
