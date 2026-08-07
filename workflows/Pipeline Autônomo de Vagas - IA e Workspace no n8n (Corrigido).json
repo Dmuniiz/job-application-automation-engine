@@ -1,0 +1,347 @@
+{
+  "name": "Pipeline Autônomo de Vagas - IA e Workspace no n8n (Corrigido)",
+  "nodes": [
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://host.docker.internal:8000/api/v1/search-jobs",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"keywords\": \"Technical Support\",\n  \"location\": \"Brazil\",\n  \"limit\": 15\n}",
+        "options": {}
+      },
+      "id": "f4fa515b-f6db-474a-9e8a-010399bd86cc",
+      "name": "FastAPI: Search Jobs",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        928,
+        400
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Extrai o array de vagas retornado pela busca\nconst searchResponse = $input.first().json;\nconst jobs = searchResponse.jobs || [];\n\nreturn jobs.map(job => ({\n  json: {\n    job_url: job.job_url,\n    title: job.title,\n    company: job.company,\n    job_id: job.job_id\n  }\n}));"
+      },
+      "id": "56244302-382c-4e89-b459-07f121e6c232",
+      "name": "Code: Unpack Jobs",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1152,
+        400
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Limpa a resposta da IA e converte para objeto JSON nativo\nlet inputText = $input.first().json.text;\n\ntry {\n  let cleanText = inputText.replace(/```json/g, '').replace(/```/g, '').trim();\n  let parsedJson = JSON.parse(cleanText);\n  return [{ json: parsedJson }];\n} catch (error) {\n  return [{\n    json: {\n      error: \"Falha ao converter resposta da IA em JSON\",\n      rawResponse: inputText\n    }\n  }];\n}"
+      },
+      "id": "b5f13b26-7bba-4e6c-abdd-1d3ef9aaabfe",
+      "name": "Code: Parse LLM Response",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1808,
+        400
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "f28d9c3b-aceb-487b-90f5-2b799de52bb6",
+              "leftValue": "={{ $json.score }}",
+              "rightValue": 80,
+              "operator": {
+                "type": "number",
+                "operation": "gte"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "4f2218c0-227a-4688-9edb-7e2463e06d8e",
+      "name": "If Score >= 80",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        2032,
+        400
+      ]
+    },
+    {
+      "parameters": {
+        "folderId": "1QFliI6nhRaimYp1AB9zwIfwiWxogLTTh",
+        "title": "=Novo CV - {{ $json.empresa }} - {{ $json.vaga_titulo }}"
+      },
+      "id": "3b3206d7-20d3-4161-9269-e2256232bf8d",
+      "name": "Create Google Doc",
+      "type": "n8n-nodes-base.googleDocs",
+      "typeVersion": 2,
+      "position": [
+        2208,
+        192
+      ],
+      "credentials": {
+        "googleDocsOAuth2Api": {
+          "id": "Y985QbfQFBfUA5xI",
+          "name": "Google Docs account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "1vugTj0D51yqTnGcZuYwHrbUOwm7O-insL0tG3A3_lSE",
+          "mode": "list",
+          "cachedResultName": "Tracking Jobs Spreedsheet"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Página1"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "job_id": "={{ $('FastAPI: Process Job Dynamic1').item.json.job_id }}",
+            "job_url": "={{ $('FastAPI: Process Job Dynamic1').item.json.job_url }}",
+            "title": "={{ $('Code: Parse LLM Response').item.json.vaga_titulo }}",
+            "score": "={{ $('Code: Parse LLM Response').item.json.score }}",
+            "status_recomendacao": "={{ $('Code: Parse LLM Response').item.json.status_recomendacao }}",
+            "empresa": "={{ $('Code: Parse LLM Response').item.json.empresa }}"
+          }
+        },
+        "options": {}
+      },
+      "id": "0043d06f-b314-4656-918f-c4469213e8b9",
+      "name": "Append Row to Google Sheet",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        2464,
+        416
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "FHas6kvIWrXhfLH6",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "hours",
+              "hoursInterval": 6
+            }
+          ]
+        }
+      },
+      "id": "9ad6d97b-abb2-46c5-94ad-1433c670bb22",
+      "name": "Schedule - Every 6 Hours1",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        704,
+        400
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://host.docker.internal:8000/api/v1/process-job",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"job_url\": \"{{ $json.job_url }}\",\n  \"job_id\": \"{{ $json.job_id }}\",\n  \"profile_id\": \"support_ops_engineer\"\n}",
+        "options": {}
+      },
+      "id": "b5b09c06-2018-4e46-a20a-7e5aa17c2002",
+      "name": "FastAPI: Process Job Dynamic1",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1360,
+        400
+      ]
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "id": "033c0b61-3593-4a18-b621-82fcf9fa43dc",
+      "name": "Google Gemini Chat Model1",
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1.1,
+      "position": [
+        1584,
+        624
+      ],
+      "credentials": {
+        "googlePalmApi": {
+          "id": "nMF6Oa44T6Ibnd2e",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Job ID: {{ $json.job_id }}\nJob Title: {{$json.title }}\nCompany: {{ $json.metadata ? $json.metadata.company : $json.company }}\nJob Description: {{$json.description_text }}\nSeniority: {{ $json.metadata ? $json.metadata.seniority_level : 'N/A' }}\nSalary: {{ $json.metadata ? $json.metadata.salary_range : 'N/A' }}",
+        "messages": {
+          "messageValues": [
+            {
+              "message": "=# ROLE\nYou are an elite Senior Technical Recruiter and ATS Optimization Specialist.\n\n# OBJECTIVE\nAnalyze the provided Job Description against the Candidate Resume to calculate an accurate, non-inflated match score (0-100).\n\n# OUTPUT FORMAT\nYou must respond STRICTLY with a single, valid JSON object without markdown fences (```json).\n\nExpected JSON Structure:\n{\n  \"vaga_titulo\": \"Título da Vaga\",\n  \"empresa\": \"Nome da Empresa\",\n  \"score\": 85,\n  \"status_recomendacao\": \"Apply Immediately\",\n  \"justificativa_curta\": \"Resumo dos pontos fortes e gaps.\",\n  \"resumo_otimizado\": \"Texto do resumo profissional otimizado para a vaga...\",\n  \"skills_match\": \"{skill 1, skill 2}\",\n  \"skills missing\": \"{skill 1, skill 2}\",\n  \"skills_transferable\": \"{skill 1, skill 2}\",\n  \"industry_fit\" : \"Industry\"\n} \n\n# CANDIDATE RESUME (FIXED)\n\n### Support Advisor Level 4 na Concentrix | Especialista em Suporte Técnico e Comunicação\n\n## COMPETÊNCIAS TÉCNICAS \n\n• Troubleshooting avançado (N1-N4), \n• Documentação técnicas, \n• Metodologias Ágeis \n• Gestão de Incidentes e Root Cause Analysis (RCA) \n• Monitoramento e Análise de Logs \n• Gestão de SLAs (SLA, MTTR e CSAT) \n• Sistemas Operacionais (Windows, macOS, Linux e iOS) \n• Redes (DNS, HTTP, TCP/IP e VPN) \n• SQL e Banco de Dados (PostgreSQL) \n• OAuth2, JWT, Filters, Rate limit e tratamento de requisições\n• Busca por solução escaláveis e perfomáticas\n• Modelagem de Classes e Relacionamento de Tabelas\n• APIs REST e Integrações com Gateways\n• Arquitetura de aplicações (camadas, modular, etc)\n• Compreendimento e aplicação de testes em aplicações\n• Cloud (AWS – Fundamentos) \n• Docker \n• Python e Java com seus frameworks para camada do back-end(FastAPI, Spring ecosystem)-Avançado. \n• N8N para automação de processos \n• Git/GitHub\n\n## RESUMO PROFISSIONAL \n\nProfissional de tecnologia e estudante de Engenharia de Software, com sólida experiência \nem suporte técnico de alta complexidade (L4), análise de causa raiz (RCA), gestão de \nincidentes críticos e troubleshooting avançado em ambientes de produção. Atuo na \ninvestigação e resolução de problemas complexos, garantindo a estabilidade dos serviços, o \ncumprimento de SLAs e a melhoria contínua da experiência do cliente. \n\nPossuo conhecimentos em desenvolvimento back-end com Java e Python, construção e \nconsumo de APIs REST, integração com bancos de dados relacionais, Docker e fundamentos \nde Cloud (AWS), aplicando esses recursos para automação de processos e otimização de \nsoluções. \n\nTenho experiência em comunicação interfuncional, elaboração de documentação técnica, \nanálise de logs, colaboração com equipes de engenharia e integração de serviços. Com inglês \navançado (B2/C1), busco atuar na área de Tecnologia com foco em Engenheiro de Software e \ncorrelacionadas, contribuindo para a disponibilidade, confiabilidade e evolução de \necossistemas tecnológicos.\n\n## EXPERIÊNCIA PROFISSIONAL \n\n### Concentrix — Support Advisor Level 4 | Dez/2024 – Atual \n\n• Atuar como o ponto final de escalonamento para incidentes avançados relacionados \na macOS-related technical issues, Windows e iOS. \n• Realização de análise de causa raiz (RCA) para identificar falhas em software, \nsistemas operacionais e fluxos operacionais. \n• Coleta e análise de logs com script automatizados para identificação de problemas \nsistemáticos. \n• Priorização e resolução de incidentes críticos com aderência a SLAs rigorosos. \n• Mentoria técnica para analistas de suporte N1, N2 e N3, elevando a qualidade de \ntroubleshooting e reduzindo escalonamentos desnecessários. \n• Utilização de relatórios de engenharia, knowledge bases e documentação de \nproblemas conhecidos para investigar problemas recorrentes e acelerar estratégias \nde resolução. \n• Avaliar jornadas de suporte de ponta a ponta, combinando descobertas técnicas, \npadrões comportamentais e dados de feedback para identificar lacunas no \natendimento e melhorar os resultados para o cliente.  \n• Tradução de problemas técnicos complexos em comunicação clara para \nstakeholders técnicos e não técnicos. \n• Auxílio na configuração de assets, device setup mantendo elevados padrões de \nqualidade de serviço. \n• Customer advocate approach. \n\n## FORMAÇÃO E CERTIFICAÇÕES \n\n• Bacharelado em Engenharia de Software — USJT (Conclusão prevista: 2027) \n• Técnico em Desenvolvimento de Sistemas — ETEC Vila Formosa \n• FISK: Escola de Idiomas e Cursos Profissionalizantes — Curso de Inglês (Conclusão prevista: \n2027) \n• AWS Cloud Practitioner — Em andamento"
+            }
+          ]
+        },
+        "batching": {}
+      },
+      "id": "b6dd5c09-986d-41ad-93c3-13ff74df9330",
+      "name": "Basic LLM Chain1",
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.9,
+      "position": [
+        1584,
+        400
+      ]
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "FastAPI: Search Jobs": {
+      "main": [
+        [
+          {
+            "node": "Code: Unpack Jobs",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code: Unpack Jobs": {
+      "main": [
+        [
+          {
+            "node": "FastAPI: Process Job Dynamic1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code: Parse LLM Response": {
+      "main": [
+        [
+          {
+            "node": "If Score >= 80",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If Score >= 80": {
+      "main": [
+        [
+          {
+            "node": "Create Google Doc",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Append Row to Google Sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create Google Doc": {
+      "main": [
+        [
+          {
+            "node": "Append Row to Google Sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Schedule - Every 6 Hours1": {
+      "main": [
+        [
+          {
+            "node": "FastAPI: Search Jobs",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "FastAPI: Process Job Dynamic1": {
+      "main": [
+        [
+          {
+            "node": "Basic LLM Chain1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model1": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Basic LLM Chain1",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Basic LLM Chain1": {
+      "main": [
+        [
+          {
+            "node": "Code: Parse LLM Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "versionId": "5ef16852-7c3f-4e29-ae9b-214ef78f448c",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "d13f8b31c6d138c6d96d7e1d94118c1cf8821955f9675a72cd69b32314e04258"
+  },
+  "nodeGroups": [],
+  "id": "ZDvgO3wJrwaSgSog",
+  "tags": []
+}
