@@ -7,21 +7,16 @@ from app.config.settings import settings
 from app.models.api import ProcessJobRequest, ProcessJobResponse, SearchJobsRequest, SearchJobsResponse, JobSearchResult
 from app.scraper.linkedin import PlaywrightLinkedInScraper
 from app.scraper.data_mock import MockLinkedInScraper
-from app.storage.resume_repository import ResumeRepository
 
 
 # Setup structured logging
 logging.basicConfig(level=settings.LOG_LEVEL)
 logger = logging.getLogger("job_automation")
 
-# Global state instances
-repo = ResumeRepository(data_dir="data")
-
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # Startup: Ensure canonical profiles are loaded
     logger.info("Initializing application services...")
-    repo.load_from_disk(settings.DEFAULT_PROFILE_ID)
     yield
     logger.info("Shutting down application services...")
 
@@ -75,14 +70,8 @@ async def process_job(request: ProcessJobRequest):
     3. Customizes Resume if Score >= Threshold
     4. Creates Google Doc & Logs to Google Sheets
     """
+
     profile_id = request.profile_id or settings.DEFAULT_PROFILE_ID
-    profile = repo.get_profile(profile_id)
-    
-    if not profile:
-        raise HTTPException(
-            status_code=404, 
-            detail=f"Resume profile '{profile_id}' not registered in data repository."
-        )
 
     # 1. Scrape Job Details (Swaps to Playwright in production)
     scraper = MockLinkedInScraper() if settings.ENVIRONMENT == "development" else PlaywrightLinkedInScraper()
