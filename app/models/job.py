@@ -18,4 +18,5 @@ class RawJobDescription(BaseModel):
     company_url: Optional[HttpUrl] = None
     metadata: JobMetadata
     description_text: str = Field(..., description="Full raw job description text")
-    scraped_at: datetime = Field(default_factory=datetime.utcnow)
+    source_platform: str = Field(..., description="Source platform, e.g., LinkedIn, Indeed, etc.")
+    scraped_at: datetime = Field(default_factory=lambda: datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S"))
