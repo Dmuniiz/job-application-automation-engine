@@ -14,6 +14,7 @@ from app.models.api import (
 from app.scraper.aggregator import JobAggregatorService
 from app.scraper.platforms.linkedin import PlaywrightLinkedInScraper
 from data.data_mock import MockLinkedInScraper
+from app.scraper.platforms.gupy import GupyScraper
 
 
 # Setup structured logging
@@ -94,30 +95,29 @@ async def process_job(request: ProcessJobRequest):
     Dinamic IP rotation and anti-bot measures.
     """
 
-    logger.info(f"Processing job '{request.job_id}' for profile '{request.profile_id or settings.DEFAULT_PROFILE_ID}'")
+    logger.info(f"Processing job '{request.job_id}' for profile '{request.profile_id}'")
+    #logger.info(f"Processing job '{request.job_id}' for profile '{request.profile_id or settings.DEFAULT_PROFILE_ID}'")
 
     job_url_str = str(request.job_url)
+    job_id_str = str(request.job_id)
 
     try:
-
+        # dinamic scrapers
         if is_mock_active:
             scraper = MockLinkedInScraper()
-        elif "gupy.io" in job_url_str:
-            return ProcessJobResponse(
-                job_id=request.job_id,
-                job_url=job_url_str,
-                company="Gupy Partner",
-                title="Support / Tech Role",
-                description_text="Detalhes extraídos via API Gupy.",
-                company_url="https://gupy.io",
-                metadata={"source": "Gupy"}
-            )
+            job = await scraper.fetch_job_details(job_id_str, job_url_str)
+        elif "gupy.io" in job_url_str or job_id_str.startswith("gupy-"):
+            scraper = GupyScraper()
+            job = await scraper.fetch_job_details(job_id_str, job_url_str)
         else:
             scraper = PlaywrightLinkedInScraper()
-            job = await scraper.fetch_job_details(str(request.job_id), job_url_str)
+            job = await scraper.fetch_job_details(job_id_str, job_url_str)
 
         if not job:
-            raise HTTPException(status_code=400, detail="Failed to scrape or parse target job URL.")
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST, 
+                detail="Failed to fetch job details. The job may not exist or the URL is invalid."
+            )
 
         return ProcessJobResponse(
             job_id=job.job_id,
