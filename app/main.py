@@ -20,6 +20,7 @@ from app.scraper.platforms.gupy import GupyScraper
 # Setup structured logging
 logging.basicConfig(level=settings.LOG_LEVEL)
 logger = logging.getLogger("job_automation")
+logging.getLogger("fake_useragent").setLevel(logging.ERROR)
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):

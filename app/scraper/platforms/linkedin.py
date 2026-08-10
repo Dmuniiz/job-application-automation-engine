@@ -5,6 +5,7 @@ import re
 from typing import List, Optional
 from datetime import datetime, timezone
 
+from app.utils.http_retry import request_with_exponential_backoff
 import httpx
 from bs4 import BeautifulSoup
 from pydantic import HttpUrl
@@ -12,6 +13,7 @@ from pydantic import HttpUrl
 from app.scraper.base import BaseScraper
 from app.models.job import RawJobDescription
 from app.scraper.parser_html import JobParser
+from fake_useragent import UserAgent
 
 
 logger = logging.getLogger(__name__)
@@ -26,13 +28,14 @@ class PlaywrightLinkedInScraper(BaseScraper):
     BASE_JOB_URL = "https://www.linkedin.com/jobs/view"
 
     def __init__(self):
+        # Gera dinamicamente um User-Agent de um navegador desktop real
+        ua = UserAgent(browsers=['chrome', 'edge'], os=['windows', 'macos'])
         self.headers = {
-            "User-Agent": (
-                "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
-                "AppleWebKit/537.36 (KHTML, like Gecko) "
-                "Chrome/120.0.0.0 Safari/537.36"
-            ),
-            "Accept-Language": "en-US,en;q=0.9",
+            "User-Agent": ua.random,
+            "Accept-Language": "pt-BR,pt;q=0.9,en-US;q=0.8,en;q=0.7",
+            "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+            "Sec-Ch-Ua-Mobile": "?0",
+            "Sec-Ch-Ua-Platform": '"Windows"'
         }
 
     async def _human_delay(self, min_delay: float = 1.0, max_delay: float = 3.0):
@@ -57,10 +60,13 @@ class PlaywrightLinkedInScraper(BaseScraper):
     async def fetch_job_details(self, job_id: str, job_url: str) -> Optional[RawJobDescription]:
         """Fetches detailed job information from a LinkedIn job posting page."""
 
-    
         async with httpx.AsyncClient(headers=self.headers, follow_redirects=True, timeout=12.0) as client:
             try:
-                response = await client.get(job_url)
+                response = await request_with_exponential_backoff(client=client, 
+                    url=job_url, 
+                    max_retries=3, 
+                    base_delay=2.0)
+                
                 if response.status_code != 200:
                     logger.warning(f"Failed to fetch job details for {job_id}: Status {response.status_code}")
                     return None

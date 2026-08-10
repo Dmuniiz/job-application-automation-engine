@@ -6,6 +6,8 @@ from app.scraper.base import BaseScraper
 from app.models.job import RawJobDescription, JobMetadata
 from app.scraper.parser_html import JobParser
 from pydantic import BaseModel, HttpUrl
+from fake_useragent import UserAgent
+from app.utils.http_retry import request_with_exponential_backoff
 
 
 logger = logging.getLogger(__name__)
@@ -14,25 +16,29 @@ class GupyScraper(BaseScraper):
     BASE_URL = "https://employability-portal.gupy.io/api/v1/jobs"
 
     def __init__(self):
-        self.headers = {
-            "User-Agent": (
-                "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
-                "AppleWebKit/537.36 (KHTML, like Gecko) "
-                "Chrome/122.0.0.0 Safari/537.36"
-            ),
-            "Accept": "application/json, text/plain, */*",
-            "Accept-Language": "pt-BR,pt;q=0.9,en-US;q=0.8,en;q=0.7",
-            "Referer": "https://portal.gupy.io/",
-            "Origin": "https://portal.gupy.io"
-        }
+            # Gera dinamicamente um User-Agent de um navegador desktop real
+            ua = UserAgent(browsers=['chrome', 'edge'], os=['windows', 'macos'])
+            self.headers = {
+                "User-Agent": ua.random,
+                "Accept": "application/json, text/plain, */*",
+                "Accept-Language": "pt-BR,pt;q=0.9,en-US;q=0.8,en;q=0.7",
+                "Referer": "https://portal.gupy.io/",
+                "Origin": "https://portal.gupy.io",
+                "Sec-Ch-Ua-Mobile": "?0",
+                "Sec-Ch-Ua-Platform": '"Windows"'
+            }
 
     async def fetch_job_details(self, job_id: str, job_url: str) -> Optional[RawJobDescription]:
         clean_id = str(job_id).replace("gupy-", "").strip()
         endpoint = f"{self.BASE_URL}/{clean_id}"
 
-        async with httpx.AsyncClient(headers=self.headers, timeout=10.0) as client:
+        async with httpx.AsyncClient(headers=self.headers, timeout=10.0) as client: 
             try:
-                response = await client.get(endpoint)
+                response = await request_with_exponential_backoff(client=client, 
+                    url=endpoint, 
+                    max_retries=3, 
+                    base_delay=2.0)
+                
                 if response.status_code != 200:
                     logger.warning(f"[Gupy] Failed to fetch job details for {clean_id}: Status {response.status_code}")
                     return None
