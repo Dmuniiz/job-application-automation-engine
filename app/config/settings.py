@@ -6,14 +6,19 @@ class Settings(BaseSettings):
     APP_NAME: str = "Job Application Automation Engine"
     ENVIRONMENT: str = "production"
     LOG_LEVEL: str = "INFO"
-    
-    # Flag global para alternar entre Mock e Scrapers Reais
+
     USE_MOCK: bool = False
-    
-    # Perfil Canônico Padrão
     DEFAULT_PROFILE_ID: str = "support_ops_engineer"
     MATCH_THRESHOLD: int = Field(default=80, ge=0, le=100)
-    
+
+    # Pilar 1: Persistency
+    # Dev:  sqlite:///./data/app.db
+    # Prod: postgresql+psycopg2://user:pass@host:5432/jobs
+    DATABASE_URL: str = Field(
+        default="sqlite:///./data/app.db",
+        description="SQLite for development, PostgreSQL for production via .env",
+    )
+
     model_config = SettingsConfigDict(
         env_file=".env",
         env_file_encoding="utf-8",
