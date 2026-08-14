@@ -24,12 +24,14 @@ async def request_with_exponential_backoff(
 
             # Handle rate limiting and server errors with exponential backoff
             if response.status_code == 429 or response.status_code in (502, 503, 504):
+
                 if attempt == max_retries:
                     logger.error(f"[Backoff] Limit {max_retries} attempts {url}. Status: {response.status_code}")
                     return response
 
                 # 1. Check for Retry-After header -> server response with waiting time
                 retry_after = response.headers.get("Retry-After")
+
                 if retry_after and retry_after.isdigit():
                     delay = float(retry_after) + random.uniform(0.5, 1.5)
                 else:
@@ -42,6 +44,7 @@ async def request_with_exponential_backoff(
                     f"[Rate Limit {response.status_code}] Attempt {attempt}/{max_retries}. "
                     f"Waiting {delay:.2f}s before the next request..."
                 )
+
                 await asyncio.sleep(delay)
                 continue
 
@@ -59,6 +62,7 @@ async def request_with_exponential_backoff(
                 f"[Connection Error] Attempt {attempt}/{max_retries} failed ({exc}). "
                 f"Retrying in {delay:.2f}s..."
             )
+            
             await asyncio.sleep(delay)
 
     return response

@@ -1,140 +1,60 @@
 import logging
-import os
 from contextlib import asynccontextmanager
-from fastapi import FastAPI, HTTPException, status
+from fastapi import FastAPI, Request
+from fastapi.responses import JSONResponse
 
 from app.config.settings import settings
-from app.models.api import (
-    ProcessJobRequest, 
-    ProcessJobResponse, 
-    SearchJobsRequest, 
-    SearchJobsResponse, 
-    JobSearchResult
-)
-from app.scraper.aggregator import JobAggregatorService
-from app.scraper.platforms.linkedin import PlaywrightLinkedInScraper
-from data.data_mock import MockLinkedInScraper
-from app.scraper.platforms.gupy import GupyScraper
+from app.core.exceptions import JobFetchError, JobNotFoundError, ScrapingSourceError
+from app.db.session import create_db_and_tables
+from app.api.routes import jobs, health
 
-
-# Setup structured logging
 logging.basicConfig(level=settings.LOG_LEVEL)
 logger = logging.getLogger("job_automation")
 logging.getLogger("fake_useragent").setLevel(logging.ERROR)
 
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Startup: Ensure canonical profiles are loaded
     logger.info("Initializing application services...")
+    create_db_and_tables()
     yield
     logger.info("Shutting down application services...")
 
+
 app = FastAPI(
     title=settings.APP_NAME,
-    version="2.0.0",
-    description="Automated Job Application System with LinkedIn Scraper, Gupy, and others platforms Integration",
-    lifespan=lifespan
+    version="2.2.0",
+    description="Automated Job Application System — layered architecture (API/Service/Repository)",
+    lifespan=lifespan,
 )
 
-is_mock_active = settings.USE_MOCK or (settings.ENVIRONMENT == "development")
-aggregator_service = JobAggregatorService(use_mock=is_mock_active)
+app.include_router(health.router)
+app.include_router(jobs.router)
 
-@app.get("/health", status_code=status.HTTP_200_OK)
-async def health_check():
-    return {
-        "status": "healthy",
-        "environment": settings.ENVIRONMENT,
-        "use_mock": is_mock_active,
-        "default_profile": settings.DEFAULT_PROFILE_ID
-    }
 
-@app.post("/api/v1/search-jobs", response_model=SearchJobsResponse)
-async def search_jobs(request: SearchJobsRequest):
-    """
-    Automated Discovery Endpoint multiplatform:
-    1. Scrapes LinkedIn Job Listings (or Mock in dev)
-    2. Scrapes Gupy Job Listings
-    3. Consolidates and returns a list of RawJobDescription objects
-    """
-    logger.info(f"Searching jobs for '{request.keywords}' in '{request.location}'")
+# --- Exception handlers globais: único lugar que traduz erro de domínio -> HTTP ---
+# Isso elimina o try/except repetido que existia em cada endpoint.
 
-    try: 
-        raw_jobs = await aggregator_service.search_all(
-            keywords=request.keywords,
-            location=request.location,
-            limit_per_source=request.limit
-        )
+@app.exception_handler(JobNotFoundError)
+async def handle_not_found(request: Request, exc: JobNotFoundError):
 
-        results = [
-            JobSearchResult(
-                job_id=job.job_id,
-                job_url=str(job.url),
-                title=job.metadata.title if hasattr(job, 'metadata') else job.title,
-                company=job.metadata.company if hasattr(job, 'metadata') else job.company,
-                source_platform=getattr(job, 'source_platform', 'LinkedIn')
-            )
-            for job in raw_jobs
-        ]
+    logger.warning(f"[404] {exc}")
 
-        return SearchJobsResponse(count=len(results), jobs=results)
+    return JSONResponse(status_code=404, content={"detail": str(exc)})
 
-    except Exception as e:
-        logger.error(f"Error during multi-platform job search: {str(e)}")
-        logger.error("".join(logging.traceback.format_exception(type(e), e, e.__traceback__)))
 
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail={"Failed to search jobs": str(e)}
-        )
+@app.exception_handler(JobFetchError)
+async def handle_fetch_error(request: Request, exc: JobFetchError):
+    logger.warning(f"[400] {exc}")
 
-@app.post("/api/v1/process-job", response_model=ProcessJobResponse)
-async def process_job(request: ProcessJobRequest):
-    """   
-    Endpoint to process a specific job posting:
-    receive the job_id and job_url, scrape the job details, and return a structured response.
-    This endpoint can be used to fetch detailed job information for a specific job posting.
-    Dinamic IP rotation and anti-bot measures.
-    """
+    return JSONResponse(status_code=400, content={"detail": str(exc)})
 
-    logger.info(f"Processing job '{request.job_id}' for profile '{request.profile_id}'")
-    #logger.info(f"Processing job '{request.job_id}' for profile '{request.profile_id or settings.DEFAULT_PROFILE_ID}'")
 
-    job_url_str = str(request.job_url)
-    job_id_str = str(request.job_id)
+@app.exception_handler(ScrapingSourceError)
+async def handle_scraping_error(request: Request, exc: ScrapingSourceError):
+    logger.error(f"[502] {exc}")
 
-    try:
-        # dinamic scrapers
-        if is_mock_active:
-            scraper = MockLinkedInScraper()
-            job = await scraper.fetch_job_details(job_id_str, job_url_str)
-        elif "gupy.io" in job_url_str or job_id_str.startswith("gupy-"):
-            scraper = GupyScraper()
-            job = await scraper.fetch_job_details(job_id_str, job_url_str)
-        else:
-            scraper = PlaywrightLinkedInScraper()
-            job = await scraper.fetch_job_details(job_id_str, job_url_str)
+    return JSONResponse(status_code=502, content={"detail": str(exc)})
 
-        if not job:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST, 
-                detail="Failed to fetch job details. The job may not exist or the URL is invalid."
-            )
-
-        return ProcessJobResponse(
-            job_id=job.job_id,
-            job_url=str(job.url),
-            company=job.metadata.company,
-            title=job.metadata.title,
-            description_text=job.description_text,
-            company_url=str(job.company_url) if job.company_url else None,
-            metadata=job.metadata
-        )
-    
-    except Exception as e:
-        logger.error(f"Error processing job '{request.job_id}': {str(e)}")
-        logger.error("".join(logging.traceback.format_exception(type(e), e, e.__traceback__)))
-
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail={"Failed to process job": str(e)}
-        )
+# Any exception NOT mapped above propagates as FastAPI's default 500, with full traceback in the log — without masking by a generic except.
+# Traceback 

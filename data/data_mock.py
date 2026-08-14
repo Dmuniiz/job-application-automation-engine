@@ -5,15 +5,15 @@ from pydantic import HttpUrl
 from app.scraper.base import BaseScraper
 from app.models.job import RawJobDescription, JobMetadata
 
-class MockLinkedInScraper(BaseScraper):
+class MockScraper(BaseScraper):
     """
     Offline Mock Scraper for testing downstream AI evaluation and integration loops
     without hitting web rate limits or browser drivers.
     """
 
-    async def fetch_job_details_false(self, job_url: str) -> Optional[RawJobDescription]:
+    async def fetch_job_details_false(self, job_id: str, job_url: str) -> Optional[RawJobDescription]:
         return RawJobDescription(
-            job_id="mock-12345",
+            job_id=job_id,
             url=HttpUrl(job_url),
             company_url=HttpUrl("https://linkedin.com/company/tech-corp"),
             metadata=JobMetadata(
@@ -36,9 +36,9 @@ class MockLinkedInScraper(BaseScraper):
             scraped_at=datetime.utcnow()
         )
 
-    async def fetch_job_details_true(self, job_url: str) -> Optional[RawJobDescription]:
+    async def fetch_job_details_true(self, job_id: str, job_url: str) -> Optional[RawJobDescription]:
             return RawJobDescription(
-            job_id="mock-score-85-l4",
+            job_id=job_id,
             url=HttpUrl(job_url),
             company_url=HttpUrl("https://linkedin.com/company/cloudscale-tech"),
             metadata=JobMetadata(
@@ -67,6 +67,19 @@ class MockLinkedInScraper(BaseScraper):
             scraped_at=datetime.utcnow()
         )
 
+    async def fetch_job_details(self, job_id: str, job_url: str) -> Optional[RawJobDescription]:
+        """
+        Mock implementation to simulate fetching job details.
+        Returns a RawJobDescription object with mock data based on the job_id.
+        """
+
+        if "low" in job_id.lower():
+            return await self.fetch_job_details_false(job_id, job_url)
+        
+        return await self.fetch_job_details_true(job_id, job_url)
+
     async def search_jobs(self, keywords: str, location: str, limit: int = 10) -> List[RawJobDescription]:
-        single = await self.fetch_job_details_true("https://www.linkedin.com/jobs/view/99887766")
+
+        single = await self.fetch_job_details_true("mock-job-99887766", "https://www.linkedin.com/jobs/view/99887766")
+
         return [single] if single else []

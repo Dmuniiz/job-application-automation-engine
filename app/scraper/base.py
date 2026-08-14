@@ -9,20 +9,10 @@ class BaseScraper(ABC):
     """
 
     @abstractmethod
-    async def fetch_job_details(self, job_url: str) -> Optional[RawJobDescription]:
+    async def fetch_job_details(self, *, job_id: str, job_url: str) -> Optional[RawJobDescription]:
         """Fetch and parse details for a single job listing."""
         pass
-
-    #@abstractmethod
-    #async def fetch_job_details_false(self, job_url: str) -> Optional[RawJobDescription]:
-    #    """Fetch and parse details for a single job listing."""
-    #   pass
-
-   #@abstractmethod
-    #async def fetch_job_details_true(self, job_url: str) -> Optional[RawJobDescription]:
-    #    """Fetch and parse details for a single job listing."""
-    #    pass
-
+    
     @abstractmethod
     async def search_jobs(self, keywords: str, location: str, limit: int = 10) -> List[RawJobDescription]:
         """Search for job listings matching keywords and location."""

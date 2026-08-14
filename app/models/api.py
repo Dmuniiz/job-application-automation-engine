@@ -3,30 +3,46 @@ from pydantic import BaseModel, HttpUrl, Field
 from typing import List, Optional
 
 class ProcessJobRequest(BaseModel):
-    job_url: HttpUrl = Field(..., description="Direct LinkedIn job application URL")
-    job_id: str = Field(..., description="Unique LinkedIn job ID")
-    profile_id: Optional[str] = Field(default="support_ops_engineer", description="Defaults to Support & Ops profile")
+    job_url: HttpUrl = Field(..., description="Direct job application URL")
+    job_id: str = Field(..., description="Unique job ID")
+    profile_id: Optional[str] = Field(default="support_ops_engineer")
 
 class ProcessJobResponse(BaseModel):
     job_id: str
+    job_hash: str
     job_url: str
     company: str
     title: str
     description_text: str
+    source_platform: str
     company_url: Optional[HttpUrl] = None
     metadata: JobMetadata
 
 class SearchJobsRequest(BaseModel):
-    keywords: str = Field(default="Technical Support", description="Job search keywords")
-    location: str = Field(default="Remote", description="Job search location")
-    limit: int = Field(default=5, ge=1, le=20, description="Number of job links to retrieve")
+    keywords: str = Field(default="Technical Support")
+    location: str = Field(default="Remote")
+    limit: int = Field(default=5, ge=1, le=20)
 
 class JobSearchResult(BaseModel):
     job_id: str
+    job_hash: str
     job_url: str
     title: str
     company: str
+    source_platform: str
 
 class SearchJobsResponse(BaseModel):
     count: int
+    skipped_duplicates: int
     jobs: List[JobSearchResult]
+
+class EvaluationRequest(BaseModel):
+    """Gemini Evaluation Request Model"""
+    score: int = Field(..., ge=0, le=100)
+    status_recomendacao: str
+    justificativa_curta: Optional[str] = None
+
+class EvaluationResponse(BaseModel):
+    job_hash: str
+    status: str
+    score: Optional[int] = None
