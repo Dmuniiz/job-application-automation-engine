@@ -12,6 +12,7 @@ class DiscoveredJob:
     job_id: str
     job_hash: str
     job_url: str
+    portal_url: str
     title: str
     company: str
     source_platform: str
@@ -50,7 +51,8 @@ class JobDiscoveryService:
             record = self.repository.register_discovered(
                 source_platform=source,
                 job_id=job.job_id,
-                url=str(job.url),
+                url=str(job.job_url_api),
+                portal_url=str(job.portal_url) if job.portal_url else None,
                 company=job.metadata.company,
                 title=job.metadata.title,
                 location=job.metadata.location,
@@ -59,7 +61,7 @@ class JobDiscoveryService:
 
             # Add the newly discovered job to the list of new jobs -> json
             new_jobs.append(DiscoveredJob(
-                job_id=job.job_id, job_hash=record.job_hash, job_url=str(job.url),
+                job_id=job.job_id, job_hash=record.job_hash, job_url=str(job.job_url_api), portal_url=str(job.portal_url) if job.portal_url else None,
                 title=job.metadata.title, company=job.metadata.company,
                 source_platform=source,
             ))

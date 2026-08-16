@@ -1,5 +1,6 @@
 import logging
 from contextlib import asynccontextmanager
+from app.scraper.aggregator import JobAggregatorService
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 
@@ -12,6 +13,9 @@ logging.basicConfig(level=settings.LOG_LEVEL)
 logger = logging.getLogger("job_automation")
 logging.getLogger("fake_useragent").setLevel(logging.ERROR)
 
+
+is_mock_active = settings.USE_MOCK or (settings.ENVIRONMENT == "development")
+aggregator_service = JobAggregatorService(use_mock=is_mock_active)
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -37,24 +41,20 @@ app.include_router(jobs.router)
 
 @app.exception_handler(JobNotFoundError)
 async def handle_not_found(request: Request, exc: JobNotFoundError):
-
     logger.warning(f"[404] {exc}")
-
     return JSONResponse(status_code=404, content={"detail": str(exc)})
 
 
 @app.exception_handler(JobFetchError)
 async def handle_fetch_error(request: Request, exc: JobFetchError):
     logger.warning(f"[400] {exc}")
-
     return JSONResponse(status_code=400, content={"detail": str(exc)})
 
 
 @app.exception_handler(ScrapingSourceError)
 async def handle_scraping_error(request: Request, exc: ScrapingSourceError):
     logger.error(f"[502] {exc}")
-
     return JSONResponse(status_code=502, content={"detail": str(exc)})
 
-# Any exception NOT mapped above propagates as FastAPI's default 500, with full traceback in the log — without masking by a generic except.
-# Traceback 
+# Qualquer exceção NÃO mapeada acima propaga como 500 padrão do FastAPI,
+# com traceback completo no log — sem mascaramento por um except genérico.

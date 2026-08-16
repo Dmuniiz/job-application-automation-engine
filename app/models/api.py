@@ -11,6 +11,7 @@ class ProcessJobResponse(BaseModel):
     job_id: str
     job_hash: str
     job_url: str
+    portal_url: Optional[str] = None
     company: str
     title: str
     description_text: str
@@ -27,6 +28,7 @@ class JobSearchResult(BaseModel):
     job_id: str
     job_hash: str
     job_url: str
+    portal_url: Optional[str] = None
     title: str
     company: str
     source_platform: str

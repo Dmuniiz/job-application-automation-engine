@@ -11,7 +11,7 @@ from app.services.job_processing_service import JobProcessingService
 from app.services.job_evaluation_service import JobEvaluationService
 from app.config.settings import settings
 
-_is_mock_active = settings.USE_MOCK or (settings.ENVIRONMENT == "development")
+_is_mock_active = (settings.USE_MOCK) or (settings.ENVIRONMENT == "development")
 _aggregator_service = JobAggregatorService(use_mock=_is_mock_active)
 
 

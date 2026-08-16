@@ -20,6 +20,7 @@ class JobRecord(SQLModel, table=True):
     job_id: str
     source_platform: str
     url: str
+    portal_url: Optional[str] = None
     company: str
     title: str
     location: Optional[str] = None

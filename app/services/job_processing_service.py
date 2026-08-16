@@ -2,6 +2,7 @@ from dataclasses import dataclass
 import logging
 from typing import Optional
 
+from app.config import settings
 from app.db.repository import JobRepository
 from app.models import job
 from app.models.api import JobMetadata
@@ -17,6 +18,7 @@ class ProcessedJob:
     job_id: str
     job_hash: str
     job_url: str
+    portal_url: Optional[str]
     company: str
     title: str
     description_text: str
@@ -34,8 +36,6 @@ class JobProcessingService:
 
 
     async def process(self, job_id: str, job_url: str, profile_id: Optional[str] = None) -> ProcessedJob:
-        # Determine whether to use mock data based on the environment
-
 
         # Get the appropriate scraper and source name
         scraper, source_name = ScraperFactory.resolve_default(job_id, job_url)
@@ -54,12 +54,9 @@ class JobProcessingService:
         job_hash = compute_job_hash(source_name, job_id)
 
         self.repository.register_discovered(
-            source_platform=source_name, 
-            job_id=job.job_id, url=str(job.url),
-            company=job.metadata.company, 
-            title=job.metadata.title,
-            location=job.metadata.location, 
-            profile_id=profile_id,
+            source_platform=source_name, job_id=job_data.job_id, url=str(job_data.job_url_api),
+            company=job_data.metadata.company, title=job_data.metadata.title,
+            location=job_data.metadata.location, profile_id=profile_id,
         )
 
         self.repository.mark_processed(job_hash)
@@ -68,13 +65,14 @@ class JobProcessingService:
 
 
         return ProcessedJob(
-            job_id=job.job_id, 
+            job_id=job_data.job_id, 
             job_hash=job_hash, 
-            job_url=str(job.url),
-            company=job.metadata.company, 
-            title=job.metadata.title,
-            description_text=job.description_text, 
+            job_url=str(job_data.job_url_api),
+            portal_url=str(job_data.portal_url) if job_data.portal_url else None,
+            company=job_data.metadata.company, 
+            title=job_data.metadata.title,
+            description_text=job_data.description_text, 
             source_platform=source_name,
-            company_url=str(job.company_url) if job.company_url else None,
-            metadata=job.metadata,
+            company_url=str(job_data.company_url) if job_data.company_url else None,
+            metadata=job_data.metadata,
         )

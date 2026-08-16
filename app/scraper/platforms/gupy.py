@@ -44,6 +44,8 @@ class GupyScraper(BaseScraper):
                     return None
 
                 data = response.json()
+                portal_job = data.get("jobUrl")
+
                 company_name = data.get("companyName") or "Gupy Partner"
                 company_code = data.get("company", {}).get("code", "portal")
                 
@@ -63,7 +65,8 @@ class GupyScraper(BaseScraper):
 
                 return RawJobDescription(
                     job_id=f"gupy-{clean_id}",
-                    url=final_job_url,
+                    job_url_api=final_job_url,
+                    portal_url=portal_job,
                     company_url=company_url,
                     metadata=metadata,
                     description_text=clean_description,
@@ -95,15 +98,18 @@ class GupyScraper(BaseScraper):
                     return jobs
 
                 data = response.json().get("data", [])
+
                 for item in data:
                     if len(jobs) >= limit:
                         break
 
                     job_id = str(item.get("id"))
                     company_code = item.get("company", {}).get("code", "portal")
-                    job_url = f"https://{company_code}.gupy.io/jobs/{job_id}"
+                    job_url_api = f"https://{company_code}.gupy.io/jobs/{job_id}"
+                    logger.info(f"[Gupy] Found job: {job_id} - {item.get('name')} at {company_code}")
 
-                    job_details = await self.fetch_job_details(job_id, job_url)
+                    job_details = await self.fetch_job_details(job_id, job_url_api)
+
                     if job_details:
                         jobs.append(job_details)
 

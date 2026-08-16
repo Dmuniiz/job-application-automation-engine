@@ -1,3 +1,5 @@
+from venv import logger
+
 from app.config.settings import settings
 from app.scraper.base import BaseScraper
 from app.scraper.platforms.gupy import GupyScraper
@@ -13,8 +15,10 @@ class ScraperFactory:
         Factory method to get the appropriate scraper based on the job URL.
         Returns a tuple of (scraper_instance, source_name).
         """
+
         if use_mock:
             return MockScraper(), "Mock"
+        
         if "gupy.io" in job_url or job_id.startswith("gupy-"):
             return GupyScraper(), "Gupy"
     

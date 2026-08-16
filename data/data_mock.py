@@ -11,32 +11,7 @@ class MockScraper(BaseScraper):
     without hitting web rate limits or browser drivers.
     """
 
-    async def fetch_job_details_false(self, job_id: str, job_url: str) -> Optional[RawJobDescription]:
-        return RawJobDescription(
-            job_id=job_id,
-            url=HttpUrl(job_url),
-            company_url=HttpUrl("https://linkedin.com/company/tech-corp"),
-            metadata=JobMetadata(
-                title="Senior AI Solutions Architect",
-                company="TechCorp Innovations",
-                location="Remote - US",
-                employment_type="Full-time",
-                seniority_level="Senior",
-                salary_range="$160,000 - $190,000",
-                posting_date="2026-07-25",
-                easy_apply=True
-            ),
-            description_text=(
-                "TechCorp is looking for a Senior AI Solutions Architect to lead our automation platform. "
-                "Requirements: 5+ years with Python, FastAPI, and LangChain or OpenAI APIs. "
-                "Experience with n8n or workflow automation engines is a huge plus. "
-                "Responsibilities include designing scalable pipelines, system architecture, and REST endpoints. "
-                "Must be familiar with PostgreSQL, Docker, and Google Workspace APIs."
-            ),
-            scraped_at=datetime.utcnow()
-        )
-
-    async def fetch_job_details_true(self, job_id: str, job_url: str) -> Optional[RawJobDescription]:
+    async def fetch_job_details(self, job_id: str, job_url: str) -> Optional[RawJobDescription]:
             return RawJobDescription(
             job_id=job_id,
             url=HttpUrl(job_url),
@@ -64,22 +39,12 @@ class MockScraper(BaseScraper):
                 "- Investigar falhas operacionais e criar scripts de correção contínua.\n"
                 "- Manter a infraestrutura de suporte operando com alta disponibilidade."
             ),
+            source_platform="LinkedIn",
             scraped_at=datetime.utcnow()
         )
 
-    async def fetch_job_details(self, job_id: str, job_url: str) -> Optional[RawJobDescription]:
-        """
-        Mock implementation to simulate fetching job details.
-        Returns a RawJobDescription object with mock data based on the job_id.
-        """
-
-        if "low" in job_id.lower():
-            return await self.fetch_job_details_false(job_id, job_url)
-        
-        return await self.fetch_job_details_true(job_id, job_url)
-
     async def search_jobs(self, keywords: str, location: str, limit: int = 10) -> List[RawJobDescription]:
 
-        single = await self.fetch_job_details_true("mock-job-99887766", "https://www.linkedin.com/jobs/view/99887766")
+        single = await self.fetch_job_details("mock-job-99887766", "https://www.linkedin.com/jobs/view/99887766")
 
         return [single] if single else []

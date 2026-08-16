@@ -96,7 +96,8 @@ class PlaywrightLinkedInScraper(BaseScraper):
 
                 return RawJobDescription(
                     job_id=job_id,
-                    url=HttpUrl(job_url),
+                    job_url_api=HttpUrl(job_url),
+                    portal_url=None,
                     company_url=self._build_company_url(raw_company),
                     metadata=metadata,
                     source_platform="LinkedIn",

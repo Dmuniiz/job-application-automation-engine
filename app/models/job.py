@@ -14,7 +14,8 @@ class JobMetadata(BaseModel):
 
 class RawJobDescription(BaseModel):
     job_id: str = Field(..., description="Unique LinkedIn or Scraper Job ID")
-    url: HttpUrl = Field(..., description="Direct Job Application URL")
+    job_url_api: HttpUrl = Field(..., description="Direct Job Application URL")
+    portal_url: Optional[str] = Field(default=None, description="Portal URL for the job posting")
     company_url: Optional[HttpUrl] = None
     metadata: JobMetadata
     description_text: str = Field(..., description="Full raw job description text")
