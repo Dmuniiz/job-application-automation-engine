@@ -4,13 +4,27 @@ from typing import Optional
 from sqlmodel import SQLModel, Field
 import re
 
+# Define the JobStatus class to represent the various statuses a job can have
 class JobStatus:
-    DISCOVERED = "discovered"   
-    PROCESSED = "processed"   # all details have been scraped and stored in the database
-    EVALUATED = "evaluated"     
-    APPLIED = "applied"        
+    DISCOVERED = "discovered"
+    PROCESSED = "processed"
+    AUTO_APPROVED = "auto_approved"
+    PENDING_REVIEW = "pending_review"
+    APPROVED = "approved"
     REJECTED = "rejected"
+    EXPIRED = "expired"          # timeout do Send-and-Wait sem resposta
     FAILED = "failed"
+
+    ALL = {
+        DISCOVERED,
+        PROCESSED,
+        AUTO_APPROVED,
+        PENDING_REVIEW,
+        APPROVED,
+        REJECTED,
+        EXPIRED,
+        FAILED
+    }
 
 class JobRecord(SQLModel, table=True):
     __tablename__ = "job_records"

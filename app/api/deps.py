@@ -8,7 +8,7 @@ from app.db.repository import JobRepository
 from app.scraper.aggregator import JobAggregatorService
 from app.services.job_discovery_service import JobDiscoveryService
 from app.services.job_processing_service import JobProcessingService
-from app.services.job_evaluation_service import JobEvaluationService
+from app.services.job_status_service import JobStatusService
 from app.config.settings import settings
 
 _is_mock_active = (settings.USE_MOCK) or (settings.ENVIRONMENT == "development")
@@ -26,6 +26,7 @@ def get_discovery_service(repo: JobRepository = Depends(get_job_repository),) ->
 def get_processing_service(repo: JobRepository = Depends(get_job_repository),) -> JobProcessingService:
     return JobProcessingService(repository=repo)
 
-
-def get_evaluation_service(repo: JobRepository = Depends(get_job_repository),) -> JobEvaluationService:
-    return JobEvaluationService(repository=repo)
+def get_status_service(
+    repo: JobRepository = Depends(get_job_repository),
+) -> JobStatusService:
+    return JobStatusService(repository=repo)

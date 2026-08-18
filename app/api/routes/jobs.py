@@ -1,13 +1,13 @@
 import logging
 from fastapi import APIRouter, Depends
-from app.api.deps import get_discovery_service, get_processing_service, get_evaluation_service
+from app.api.deps import get_discovery_service, get_processing_service
 from app.services.job_discovery_service import JobDiscoveryService
 from app.services.job_processing_service import JobProcessingService
-from app.services.job_evaluation_service import JobEvaluationService
+from app.services.job_status_service import JobStatusService
 from app.models.api import (
     ProcessJobRequest, ProcessJobResponse,
     SearchJobsRequest, SearchJobsResponse, JobSearchResult,
-    EvaluationRequest, EvaluationResponse,
+    UpdateJobStatusRequest, UpdateJobStatusResponse
 )
 
 logger = logging.getLogger("job_automation")
@@ -45,18 +45,15 @@ async def process_job(
 
     return ProcessJobResponse(**vars(result))
 
-
-@router.post("/jobs/{job_hash}/evaluation", response_model=EvaluationResponse)
-async def save_evaluation(
+@router.post("/jobs/{job_hash}/status", response_model=UpdateJobStatusResponse)
+async def update_job_status(
     job_hash: str,
-    request: EvaluationRequest,
-    service: JobEvaluationService = Depends(get_evaluation_service),
+    request: UpdateJobStatusRequest,
+    service: JobStatusService = Depends(get_status_service),
 ):
-    
-    record = service.evaluate(
-        job_hash, score=request.score,
+    record = service.update(
+        job_hash, status=request.status, score=request.score,
         status_recomendacao=request.status_recomendacao,
         justificativa_curta=request.justificativa_curta,
     )
-
-    return EvaluationResponse(job_hash=job_hash, status=record.status, score=record.score)
+    return UpdateJobStatusResponse(job_hash=job_hash, status=record.status, score=record.score)

@@ -73,24 +73,30 @@ class JobRepository:
 
         return job
 
-    def save_evaluation(self, job_hash: str, *, score: int, status_recomendacao: str, justificativa_curta: Optional[str] = None,) -> Optional[JobRecord]:
-        
-        job_hash_record = self.get_by_hash(job_hash)
-
-        if not job_hash_record:
+    def update_job(
+        self, job_hash: str, *, status: str,
+        score: Optional[int] = None,
+        status_recomendacao: Optional[str] = None,
+        justificativa_curta: Optional[str] = None,
+    ) -> Optional[JobRecord]:
+        record = self.get_by_hash(job_hash)
+        if not record:
             return None
-        
-        job_hash_record.score = score
-        job_hash_record.status_recomendacao = status_recomendacao
-        job_hash_record.justificativa_curta = justificativa_curta
-        job_hash_record.status = JobStatus.EVALUATED
-        job_hash_record.updated_at = datetime.now(timezone.utc)
 
-        self.session.add(job_hash_record)
+        record.status = status
+        if score is not None:
+            record.score = score
+        if status_recomendacao is not None:
+            record.status_recomendacao = status_recomendacao
+        if justificativa_curta is not None:
+            record.justificativa_curta = justificativa_curta
+        record.updated_at = datetime.now(timezone.utc)
+
+        self.session.add(record)
         self.session.commit()
-        self.session.refresh(job_hash_record)
+        self.session.refresh(record)
 
-        return job_hash_record
+        return record
 
     def list_jobs(self, *, 
                   status: Optional[str] = None,

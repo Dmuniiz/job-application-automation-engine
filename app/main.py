@@ -5,7 +5,7 @@ from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 
 from app.config.settings import settings
-from app.core.exceptions import JobFetchError, JobNotFoundError, ScrapingSourceError
+from app.core.exceptions import JobFetchError, JobNotFoundError, ScrapingSourceError, InvalidStatusError
 from app.db.session import create_db_and_tables
 from app.api.routes import jobs, health
 
@@ -55,6 +55,13 @@ async def handle_fetch_error(request: Request, exc: JobFetchError):
 async def handle_scraping_error(request: Request, exc: ScrapingSourceError):
     logger.error(f"[502] {exc}")
     return JSONResponse(status_code=502, content={"detail": str(exc)})
+
+from app.core.exceptions import JobFetchError, JobNotFoundError, InvalidStatusError
+
+@app.exception_handler(InvalidStatusError)
+async def handle_invalid_status(request: Request, exc: InvalidStatusError):
+    logger.warning(f"[400] {exc}")
+    return JSONResponse(status_code=400, content={"detail": str(exc)})
 
 # Qualquer exceção NÃO mapeada acima propaga como 500 padrão do FastAPI,
 # com traceback completo no log — sem mascaramento por um except genérico.
