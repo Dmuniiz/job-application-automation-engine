@@ -26,7 +26,5 @@ def get_discovery_service(repo: JobRepository = Depends(get_job_repository),) ->
 def get_processing_service(repo: JobRepository = Depends(get_job_repository),) -> JobProcessingService:
     return JobProcessingService(repository=repo)
 
-def get_status_service(
-    repo: JobRepository = Depends(get_job_repository),
-) -> JobStatusService:
+def get_status_service(repo: JobRepository = Depends(get_job_repository),) -> JobStatusService:
     return JobStatusService(repository=repo)

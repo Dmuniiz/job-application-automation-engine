@@ -1,9 +1,10 @@
 import logging
 from fastapi import APIRouter, Depends
-from app.api.deps import get_discovery_service, get_processing_service
+from app.api.deps import get_discovery_service, get_processing_service, get_status_service
 from app.services.job_discovery_service import JobDiscoveryService
 from app.services.job_processing_service import JobProcessingService
 from app.services.job_status_service import JobStatusService
+
 from app.models.api import (
     ProcessJobRequest, ProcessJobResponse,
     SearchJobsRequest, SearchJobsResponse, JobSearchResult,

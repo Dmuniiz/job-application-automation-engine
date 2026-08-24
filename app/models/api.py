@@ -58,8 +58,8 @@ class EvaluationResponse(BaseModel):
 #models to update job status
 
 class UpdateJobStatusRequest(BaseModel):
-    status: str = Field(),
-    score: Optional[int] = Field()
+    status: str = Field(..., description="Novo status, definido pelo fluxo do n8n")
+    score: Optional[int] = Field(default=None, ge=0, le=100)
     status_recomendacao: Optional[str] = None
     justificativa_curta: Optional[str] = None
 
