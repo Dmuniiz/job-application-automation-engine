@@ -11,6 +11,7 @@ from app.api.routes import jobs, health
 
 logging.basicConfig(level=settings.LOG_LEVEL)
 logger = logging.getLogger("job_automation")
+
 logging.getLogger("fake_useragent").setLevel(logging.ERROR)
 
 

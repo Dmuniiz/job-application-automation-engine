@@ -4,7 +4,7 @@ from app.config.settings import settings
 from app.scraper.base import BaseScraper
 from app.scraper.platforms.gupy import GupyScraper
 from app.scraper.platforms.linkedin import PlaywrightLinkedInScraper
-from data.data_mock import MockScraper
+from app.test.data_mock import MockScraper
 
 
 class ScraperFactory:

@@ -4,7 +4,7 @@ import logging
 from app.models.job import RawJobDescription
 from app.scraper.platforms.gupy import GupyScraper
 from app.scraper.platforms.linkedin import PlaywrightLinkedInScraper  # Seu scraper atual do LinkedIn
-from data.data_mock import MockScraper  # Fallback/Mock
+from app.test.data_mock import MockScraper  # Fallback/Mock
 
 
 logger = logging.getLogger(__name__)

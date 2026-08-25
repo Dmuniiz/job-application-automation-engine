@@ -31,41 +31,44 @@ class JobDiscoveryService:
         self.repository = repository
         self.aggregator = aggregator
 
-    async def discover(self, keywords: str, location: str, limit_per_source: int) -> DiscoveryResult:
+# discover -> bulk upsert jobs
 
+    async def discover(self, keywords: str, location: str, limit_per_source: int) -> DiscoveryResult:
+        
         raw_jobs = await self.aggregator.search_all(
-            keywords=keywords, location=location, limit_per_source=limit_per_source
+            keywords=keywords, 
+            location=location, 
+            limit_per_source=limit_per_source
         )
 
-        new_jobs: List[DiscoveredJob] = []
-        skipped = 0
+        job_dicts = [
+            {
+                "job_id": job.job_id,
+                "source_platform": getattr(job, "source_platform", "LinkedIn"),
+                "url": str(job.job_url_api),
+                "portal_url": str(job.portal_url),
+                "company": job.metadata.company,
+                "title": job.metadata.title,
+                "location": job.metadata.location,
+            }
+            for job in raw_jobs
+        ]
 
-        for job in raw_jobs:
-            source = getattr(job, "source_platform", "LinkedIn")
+        # 1 única instrução SQL para o lote inteiro, em vez de N idas ao banco.
+        bulk_result = self.repository.bulk_register_discovered(job_dicts)
 
-            #check if the job already exists in the database
-            if self.repository.exists(source, job.job_id):
-                skipped += 1
-                continue
-
-            record = self.repository.register_discovered(
-                source_platform=source,
-                job_id=job.job_id,
-                url=str(job.job_url_api),
-                portal_url=str(job.portal_url) if job.portal_url else None,
-                company=job.metadata.company,
-                title=job.metadata.title,
-                location=job.metadata.location,
+        new_jobs = [
+            DiscoveredJob(
+                job_id=r.job_id, job_hash=r.job_hash, job_url=r.url,
+                portal_url=r.portal_url,
+                title=r.title, 
+                company=r.company,
+                source_platform=r.source_platform,
             )
+            for r in bulk_result.new_records
+        ]
 
-
-            # Add the newly discovered job to the list of new jobs -> json
-            new_jobs.append(DiscoveredJob(
-                job_id=job.job_id, job_hash=record.job_hash, job_url=str(job.job_url_api), portal_url=str(job.portal_url) if job.portal_url else None,
-                title=job.metadata.title, company=job.metadata.company,
-                source_platform=source,
-            ))
-
-        logger.info(f"[Discovery] new={len(new_jobs)} skipped_duplicates={skipped}")
-
-        return DiscoveryResult(new_jobs=new_jobs, skipped_duplicates=skipped)
+        logger.info(
+            f"[Discovery] new={len(new_jobs)} skipped_duplicates={bulk_result.skipped_duplicates}"
+        )
+        return DiscoveryResult(new_jobs=new_jobs, skipped_duplicates=bulk_result.skipped_duplicates)

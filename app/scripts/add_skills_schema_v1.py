@@ -6,6 +6,7 @@ Migração pontual, idempotente:
    create_all não altera sozinho.
 Rodar uma única vez: python scripts/add_skills_schema_v1.py
 """
+
 from sqlalchemy import text
 from app.db.session import engine, create_db_and_tables
 
@@ -19,7 +20,7 @@ def main():
         if dialect == "sqlite":
 
             existing_cols = [row[1] for row in conn.execute(text("PRAGMA table_info(job_records)"))]
-            
+
             if "industry_fit" not in existing_cols:
                 conn.execute(text("ALTER TABLE job_records ADD COLUMN industry_fit VARCHAR"))
                 conn.commit()

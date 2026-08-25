@@ -13,6 +13,7 @@ async def request_with_exponential_backoff(
     max_delay: float = 30.0,
     **kwargs
 ) -> httpx.Response:
+    
     """
     Makes an HTTP request with exponential backoff and jitter for retries.
     Expcted formula for delay: delay = min(base_delay * (2 ** attempt), max_delay) + random.uniform(0, 1)

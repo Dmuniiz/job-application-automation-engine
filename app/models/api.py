@@ -1,6 +1,7 @@
 from app.models.job import JobMetadata
 from pydantic import BaseModel, HttpUrl, Field
 from typing import List, Optional
+from datetime import datetime
 
 
 class ProcessJobRequest(BaseModel):
@@ -62,8 +63,27 @@ class UpdateJobStatusRequest(BaseModel):
     score: Optional[int] = Field(default=None, ge=0, le=100)
     status_recomendacao: Optional[str] = None
     justificativa_curta: Optional[str] = None
+    industry_fit: Optional[str] = None
+    skills_match: Optional[List[str]] = None
+    skills_missing: Optional[List[str]] = None
+    skills_transferable: Optional[List[str]] = None
 
 class UpdateJobStatusResponse(BaseModel):
     job_hash: str
     status: str
     score: Optional[int] = None
+
+
+# models recurring company
+
+class RecurringCompany(BaseModel):
+    company: str
+    occurrences: int
+    best_score: int
+    last_seen_at: datetime
+    latest_job_title: str
+    latest_job_url: str
+
+class RecurringCompaniesResponse(BaseModel):
+    count: int
+    companies: List[RecurringCompany]
