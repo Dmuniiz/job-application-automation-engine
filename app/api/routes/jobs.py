@@ -45,7 +45,7 @@ async def process_job(
 ):
 
     result = await service.process(
-        job_id=str(request.job_id), job_url=str(request.job_url), profile_id=request.profile_id,
+        job_id=str(request.job_id), job_url=str(request.job_url),
     )
 
     return ProcessJobResponse(**vars(result))
@@ -64,9 +64,10 @@ async def update_job_status(
         skills_match=request.skills_match,
         skills_missing=request.skills_missing,
         skills_transferable=request.skills_transferable,
+        google_doc_url=request.google_doc_url,
+        sheet_synced=request.sheet_synced,
     )
     return UpdateJobStatusResponse(job_hash=job_hash, status=record.status, score=record.score)
-
 
 #reccuring companies query endpoint score >= 70
 

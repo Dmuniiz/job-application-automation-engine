@@ -35,7 +35,7 @@ class JobProcessingService:
 
 
 
-    async def process(self, job_id: str, job_url: str, profile_id: Optional[str] = None) -> ProcessedJob:
+    async def process(self, job_id: str, job_url: str) -> ProcessedJob:
 
         # Get the appropriate scraper and source name
         scraper, source_name = ScraperFactory.resolve_default(job_id, job_url)
@@ -56,7 +56,7 @@ class JobProcessingService:
         self.repository.register_discovered(
             source_platform=source_name, job_id=job_data.job_id, url=str(job_data.job_url_api),
             company=job_data.metadata.company, title=job_data.metadata.title,
-            location=job_data.metadata.location, profile_id=profile_id,
+            location=job_data.metadata.location, 
         )
 
         self.repository.mark_processed(job_hash)

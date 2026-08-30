@@ -49,7 +49,6 @@ class JobRecord(SQLModel, table=True):
     company: str = Field(index=True)
     title: str
     location: Optional[str] = None
-    profile_id: Optional[str] = None
 
     status: str = Field(default=JobStatus.DISCOVERED, index=True)
     score: Optional[int] = Field(default=None, index=True)

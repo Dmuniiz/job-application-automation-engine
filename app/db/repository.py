@@ -44,7 +44,6 @@ class JobRepository:
         company: str, 
         title: str, 
         location: Optional[str] = None,
-        profile_id: Optional[str] = None,
     ) -> JobRecord:
         
         """Idempotently registers a discovered job in the database. If the job already exists, it returns the existing record."""
@@ -65,7 +64,6 @@ class JobRepository:
             company=company,
             title=title,
             location=location,
-            profile_id=profile_id,
             status=JobStatus.DISCOVERED,
         )
 
@@ -104,7 +102,6 @@ class JobRepository:
                 "company": j["company"],
                 "title": j["title"],
                 "location": j.get("location"),
-                "profile_id": j.get("profile_id"),
                 "status": JobStatus.DISCOVERED,
                 "score": None,
                 "status_recomendacao": None,
@@ -155,52 +152,52 @@ class JobRepository:
         return job
 
     def update_job(
-        self, job_hash: str, *, status: str,
+        self, job_hash: str, *,
+        status: Optional[str] = None,
         score: Optional[int] = None,
         status_recomendacao: Optional[str] = None,
         justificativa_curta: Optional[str] = None,
         industry_fit: Optional[str] = None,
+        google_doc_url: Optional[str] = None,
+        sheet_synced: Optional[bool] = None,
     ) -> Optional[JobRecord]:
+        
         record = self.get_by_hash(job_hash)
-
         if not record:
             return None
-        
-        record.status = status
 
+        # status=None significa "não alterar" — é o que permite o sync-only call
+        if status is not None:
+            record.status = status
         if score is not None:
             record.score = score
-
         if status_recomendacao is not None:
             record.status_recomendacao = status_recomendacao
-
         if justificativa_curta is not None:
             record.justificativa_curta = justificativa_curta
-            
         if industry_fit is not None:
             record.industry_fit = industry_fit
+        if google_doc_url is not None:
+            record.google_doc_url = google_doc_url
+        if sheet_synced is not None:
+            record.sheet_synced = sheet_synced
 
         record.updated_at = datetime.now(timezone.utc)
-
         self.session.add(record)
         self.session.commit()
         self.session.refresh(record)
-
-        return record    
+        
+        return record  
 
     def list_jobs(self, *, 
                   status: Optional[str] = None,
-                  profile_id: Optional[str] = None, 
                   limit: int = 50, ) -> List[JobRecord]:
 
         query = select(JobRecord)
         
         if status:
             query = query.where(JobRecord.status == status)
-
-        if profile_id:
-            query = query.where(JobRecord.profile_id == profile_id)
-
+            
         query = query.order_by(JobRecord.created_at.desc()).limit(limit)
 
         return list(self.session.exec(query))

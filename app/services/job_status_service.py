@@ -12,19 +12,22 @@ class JobStatusService:
         self.repository = repository
 
     def update(
-        self, job_hash: str, *, status: str,
+        self, job_hash: str, *,
+        status: str | None = None,
         score: int | None = None,
         status_recomendacao: str | None = None,
         justificativa_curta: str | None = None,
-        skills_match: str | None = None,      # JSON string ou CSV
-        skills_missing: str | None = None,
-        skills_transferable: str | None = None,
         industry_fit: str | None = None,
+        skills_match: list[str] | None = None,
+        skills_missing: list[str] | None = None,
+        skills_transferable: list[str] | None = None,
+        google_doc_url: str | None = None,
+        sheet_synced: bool | None = None,
     ) -> JobRecord:
-
-        if status not in JobStatus.ALL:
+        
+        if status is not None and status not in JobStatus.ALL:
             raise InvalidStatusError(
-                f"Status {status} invalid. Accepted Values: {sorted(JobStatus.ALL)}"
+                f"Status '{status}' inválido. Valores aceitos: {sorted(JobStatus.ALL)}"
             )
 
         record = self.repository.update_job(
@@ -32,6 +35,8 @@ class JobStatusService:
             status_recomendacao=status_recomendacao,
             justificativa_curta=justificativa_curta,
             industry_fit=industry_fit,
+            google_doc_url=google_doc_url,
+            sheet_synced=sheet_synced,
         )
         if not record:
             raise JobNotFoundError(f"No job found for hash={job_hash}")

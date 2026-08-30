@@ -7,7 +7,6 @@ from datetime import datetime
 class ProcessJobRequest(BaseModel):
     job_url: HttpUrl = Field(..., description="Direct job application URL")
     job_id: str = Field(..., description="Unique job ID")
-    profile_id: Optional[str] = Field(default="support_ops_engineer")
 
 class ProcessJobResponse(BaseModel):
     job_id: str
@@ -59,7 +58,10 @@ class EvaluationResponse(BaseModel):
 #models to update job status
 
 class UpdateJobStatusRequest(BaseModel):
-    status: str = Field(..., description="Novo status, definido pelo fluxo do n8n")
+    status: Optional[str] = Field(
+        default=None,
+        description="Novo status. Omitir para atualizar só outros campos (ex.: sync de Doc/Sheet) sem mudar o status.",
+    )
     score: Optional[int] = Field(default=None, ge=0, le=100)
     status_recomendacao: Optional[str] = None
     justificativa_curta: Optional[str] = None
@@ -67,6 +69,8 @@ class UpdateJobStatusRequest(BaseModel):
     skills_match: Optional[List[str]] = None
     skills_missing: Optional[List[str]] = None
     skills_transferable: Optional[List[str]] = None
+    google_doc_url: Optional[str] = None
+    sheet_synced: Optional[bool] = None
 
 class UpdateJobStatusResponse(BaseModel):
     job_hash: str
