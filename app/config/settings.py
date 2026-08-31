@@ -8,8 +8,6 @@ class Settings(BaseSettings):
     LOG_LEVEL: str = "INFO"
 
     USE_MOCK: bool = False
-    DEFAULT_PROFILE_ID: str = "support_ops_engineer"
-    MATCH_THRESHOLD: int = Field(default=80, ge=0, le=100)
 
     # Pilar 1: Persistency
     # Dev:  sqlite:///./data/app.db
