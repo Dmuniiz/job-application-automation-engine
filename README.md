@@ -34,6 +34,12 @@ flowchart TD
 
     F -->|"score < 50"| G5["Persist: rejected"] --> J
 ```
+---
+
+## N8N Workflow - Orchestrator
+![alt text](n8n-workflow.png)
+
+---
 
 **Data model:** jobs are deduplicated via an MD5 hash of `(source_platform, job_id)` **before** any Gemini call — the dedup layer exists specifically so the same posting is never scored twice by the LLM. Skills (`match`/`missing`/`transferable`) are normalized into a proper dimension table (`skills` + `job_record_skills`), not stored as CSV strings, so they can actually be aggregated later (e.g. "what am I missing most often across rejected postings") without manual string parsing.
 
@@ -112,8 +118,6 @@ tests/
   integration/   # repository against SQLite in-memory
 ```
 
-## N8N Workflow - Orchestrator
-![alt text](image.png)
 ---
 
 ## Getting Started
