@@ -57,7 +57,7 @@ async def update_job_status(
     service: JobStatusService = Depends(get_status_service),
 ):
     record = service.update(
-        job_hash, status=request.status, score=request.score,
+        job_hash=job_hash, status=request.status, score=request.score,
         status_recomendacao=request.status_recomendacao,
         justificativa_curta=request.justificativa_curta,
         industry_fit=request.industry_fit,

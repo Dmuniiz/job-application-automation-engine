@@ -31,7 +31,7 @@ class JobStatusService:
             )
 
         record = self.repository.update_job(
-            job_hash, status=status, score=score,
+            job_hash=job_hash, status=status, score=score,
             status_recomendacao=status_recomendacao,
             justificativa_curta=justificativa_curta,
             industry_fit=industry_fit,

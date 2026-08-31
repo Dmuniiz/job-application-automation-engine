@@ -163,6 +163,7 @@ class JobRepository:
     ) -> Optional[JobRecord]:
         
         record = self.get_by_hash(job_hash)
+        
         if not record:
             return None
 
